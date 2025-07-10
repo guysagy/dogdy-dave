@@ -1,5 +1,20 @@
-import { dates } from '/utils/dates'
-import OpenAI from "openai"
+function formatDate(date) {
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const dd = String(date.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+function getDateNDaysAgo(n) {
+    const now = new Date(); // current date and time
+    now.setDate(now.getDate() - n); // subtract n days
+    return formatDate(now);
+}
+
+const dates = {
+    startDate: getDateNDaysAgo(3), // alter days to increase/decrease data set
+    endDate: getDateNDaysAgo(1) // leave at 1 to get yesterday's data
+}
 
 const tickersArr = []
 
@@ -42,7 +57,7 @@ async function fetchStockData() {
     loadingArea.style.display = 'flex'
     try {
         const stockData = await Promise.all(tickersArr.map(async (ticker) => {
-            const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${dates.startDate}/${dates.endDate}?apiKey=${process.env.POLYGON_API_KEY}`
+            const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${dates.startDate}/${dates.endDate}?apiKey=m3BagFbare6Spz2Fb0kB69Xa0gmm1K6G`
             const response = await fetch(url)
             const data = await response.text()
             const status = await response.status
@@ -79,17 +94,27 @@ async function fetchReport(data) {
     ]
 
     try {
-        const openai = new OpenAI({
-            dangerouslyAllowBrowser: true
-        })
-        const response = await openai.chat.completions.create({
-            model: 'gpt-4',
-            messages: messages,
-            temperature: 1.1,
-            presence_penalty: 0,
-            frequency_penalty: 0
-        })
-        renderReport(response.choices[0].message.content)
+        // const openai = new OpenAI({
+        //     dangerouslyAllowBrowser: true
+        // })
+        // const response = await openai.chat.completions.create({
+        //     model: 'gpt-4',
+        //     messages: messages,
+        //     temperature: 1.1,
+        //     presence_penalty: 0,
+        //     frequency_penalty: 0
+        // })
+        // renderReport(response.choices[0].message.content)
+
+        const response = await fetch("https://openai-api-worker.guysagy.workers.dev/", {
+            method: "POST", 
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: ""
+        });
+        const data = await response.json();
+        console.log(data);
 
     } catch (err) {
         console.log('Error:', err)
