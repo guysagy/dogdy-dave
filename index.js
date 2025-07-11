@@ -59,11 +59,12 @@ async function fetchStockData() {
         const stockData = await Promise.all(tickersArr.map(async (ticker) => {
             const url = `https://api.polygon.io/v2/aggs/ticker/${ticker}/range/1/day/${dates.startDate}/${dates.endDate}?apiKey=m3BagFbare6Spz2Fb0kB69Xa0gmm1K6G`
             const response = await fetch(url)
-            const data = await response.text()
+            const data = await response.json()
             const status = await response.status
             if (status === 200) {
                 apiMessage.innerText = 'Creating report...'
-                return data
+                delete data.request_id
+                return JSON.stringify(data)
             } else {
                 loadingArea.innerText = 'There was an error fetching stock data.'
             }
@@ -75,7 +76,8 @@ async function fetchStockData() {
     }
 }
 
-async function fetchReport(data) {
+async function fetchReport(stockData) {
+    console.log("stockData = ", stockData);
     const messages = [
         {
             role: 'system',
@@ -83,7 +85,7 @@ async function fetchReport(data) {
         },
         {
             role: 'user',
-            content: `${data}
+            content: `${stockData}
             ###
             OK baby, hold on tight! You are going to haate this! Over the past three days, Tesla (TSLA) shares have plummetted. The stock opened at $223.98 and closed at $202.11 on the third day, with some jumping around in the meantime. This is a great time to buy, baby! But not a great time to sell! But I'm not done! Apple (AAPL) stocks have gone stratospheric! This is a seriously hot stock right now. They opened at $166.38 and closed at $182.89 on day three. So all in all, I would hold on to Tesla shares tight if you already have them - they might bounce right back up and head to the stars! They are volatile stock, so expect the unexpected. For APPL stock, how much do you need the money? Sell now and take the profits or hang on and wait for more! If it were me, I would hang on because this stock is on fire right now!!! Apple are throwing a Wall Street party and y'all invited!
             ###
@@ -94,28 +96,21 @@ async function fetchReport(data) {
     ]
 
     try {
-        // const openai = new OpenAI({
-        //     dangerouslyAllowBrowser: true
-        // })
-        // const response = await openai.chat.completions.create({
-        //     model: 'gpt-4',
-        //     messages: messages,
-        //     temperature: 1.1,
-        //     presence_penalty: 0,
-        //     frequency_penalty: 0
-        // })
-        // renderReport(response.choices[0].message.content)
-
         const response = await fetch("https://openai-api-worker.guysagy.workers.dev/", {
             method: "POST", 
             headers: {
                 "Content-Type": "application/json"
             },
-            body: ""
+            body: JSON.stringify(messages)
         });
+        if (!response.ok) {
+            throw new Error(`Worker error: ${response.statusText}`);
+        }
         const data = await response.json();
-        console.log(data);
-
+        if (data.error) {
+            throw new Error(`Workder error: ${data.error}`);
+        }
+        renderReport(data.content);
     } catch (err) {
         console.log('Error:', err)
         loadingArea.innerText = 'Unable to access AI. Please refresh and try again'
